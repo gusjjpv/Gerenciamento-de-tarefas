@@ -20,14 +20,19 @@ from rest_framework.routers import SimpleRouter
 from rest_framework.authtoken import views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from users.api.views import UserProfileExampleViewSet
+from tasks.api.views import ProjetoViewSet, TarefaViewSet
 
 router = SimpleRouter()
 
 router.register("users", UserProfileExampleViewSet, basename="users")
+router.register("projetos", ProjetoViewSet, basename="projetos")
+router.register("tarefas", TarefaViewSet, basename="tarefas")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/token-auth/", views.obtain_auth_token),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-]+router.urls
+]
+
+urlpatterns += router.urls
