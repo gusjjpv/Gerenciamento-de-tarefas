@@ -1,7 +1,7 @@
 """Serializers for the tasks app."""
 
 from rest_framework import serializers
-from ..models import Projeto, Tarefa
+from ..models import MENSAGEM_TITULO_CURTO, TITULO_TAMANHO_MINIMO, Projeto, Tarefa
 
 class ProjetoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +31,9 @@ class TarefaSerializer(serializers.ModelSerializer):
             "data_atualizacao",
         ]
         read_only_fields = ["data_criacao", "data_atualizacao"]
+
+    def validate_titulo(self, value):
+        # Business rule: title min 3 chars (returns 400 instead of 500)
+        if len(value) < TITULO_TAMANHO_MINIMO:
+            raise serializers.ValidationError(MENSAGEM_TITULO_CURTO)
+        return value

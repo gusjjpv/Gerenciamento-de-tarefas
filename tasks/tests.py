@@ -72,6 +72,16 @@ class TarefaAPITestCase(APITestCase):
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("status", resposta.data)
 
+    def test_titulo_curto_invalido(self):
+        """ Regra de negócio: título com menos de 3 caracteres é rejeitado com 400 """
+        resposta = self.client.post(
+            "/tarefas/", {"projeto": self.projeto.id, "titulo": "ab"}, format="json"
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("titulo", resposta.data)
+        self.assertEqual(Tarefa.objects.count(), 1)
+
     def test_excluir_projeto_remove_tarefas(self):
         """ Regra de negócio: excluir o projeto exclui suas tarefas (relacionamento) """
         resposta = self.client.delete(f"/projetos/{self.projeto.id}/")
