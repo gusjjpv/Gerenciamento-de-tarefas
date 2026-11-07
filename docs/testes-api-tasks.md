@@ -386,3 +386,4 @@ exemplo do app `users`, que já vinha no projeto base.
 | `FAILED (failures=N, errors=M)` no final | Algum teste falhou |
 
 ---
+
