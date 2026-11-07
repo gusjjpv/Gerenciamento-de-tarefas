@@ -53,7 +53,8 @@ class TarefaAPITestCase(APITestCase):
         self.assertFalse(Tarefa.objects.filter(id=self.tarefa.id).exists())
 
     def test_status_padrao_pendente(self):
-        """ Regra de negócio: tarefa criada sem status recebe PENDENTE """
+        """ Regra de negócio: Ao ser criada, se nenhum status for explicitamente enviado,
+        a tarefa deve assumir o estado padrão de PENDENTE """
         resposta = self.client.post(
             "/tarefas/", {"projeto": self.projeto.id, "titulo": "Sem status"}, format="json"
         )
@@ -73,7 +74,7 @@ class TarefaAPITestCase(APITestCase):
         self.assertIn("status", resposta.data)
 
     def test_titulo_curto_invalido(self):
-        """ Regra de negócio: título com menos de 3 caracteres é rejeitado com 400 """
+        """ Regra de negócio: O título da tarefa deve ter, no mínimo, 3 caracteres. """
         resposta = self.client.post(
             "/tarefas/", {"projeto": self.projeto.id, "titulo": "ab"}, format="json"
         )
@@ -83,7 +84,7 @@ class TarefaAPITestCase(APITestCase):
         self.assertEqual(Tarefa.objects.count(), 1)
 
     def test_excluir_projeto_remove_tarefas(self):
-        """ Regra de negócio: excluir o projeto exclui suas tarefas (relacionamento) """
+        """ Relacionamento: excluir o projeto exclui suas tarefas (CASCADE) """
         resposta = self.client.delete(f"/projetos/{self.projeto.id}/")
 
         self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)

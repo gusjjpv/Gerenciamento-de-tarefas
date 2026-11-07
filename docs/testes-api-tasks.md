@@ -319,6 +319,33 @@ HTTP 204 No Content
 
 ---
 
+## 4.1 Regras de negócio × testes
+
+| Regra | Descrição | Implementada | Testada | Teste |
+|---|---|---|---|---|
+| RN01 | O título da tarefa deve ter, no mínimo, 3 caracteres | ✅ `Tarefa.clean()` + `TarefaSerializer.validate_titulo` | ✅ | `test_titulo_curto_invalido` |
+| RN02 | A data de prazo não pode ser anterior à data de criação | ❌ | ❌ | — |
+| RN03 | Sem status enviado, a tarefa assume `PENDENTE` | ✅ `default=StatusTarefa.PENDENTE` | ✅ | `test_status_padrao_pendente` |
+| RN04 | Um usuário não pode ter dois projetos ativos com o mesmo nome | ❌ | ❌ | — |
+| RN05 | Projeto com tarefas `PENDENTE` ou `EM_ANDAMENTO` não pode ser excluído | ❌ | ❌ | — |
+| RN06 | Tarefa com prioridade `ALTA` precisa ter prazo | ❌ | ❌ | — |
+
+> As regras RN02, RN04, RN05 e RN06 ainda não estão no código, por isso não têm teste.
+> Atenção: `test_excluir_projeto_remove_tarefas` exclui um projeto que tem uma tarefa `PENDENTE`.
+> Se a RN05 for implementada, esse teste deve passar a esperar a exclusão **bloqueada**.
+
+## 4.2 Validações × testes
+
+| Validação | Onde | Testada | Teste |
+|---|---|---|---|
+| `status` só aceita `PENDENTE`, `EM_ANDAMENTO` ou `CONCLUIDA` | `choices` em `Tarefa.status` | ✅ | `test_status_invalido` |
+| `titulo` com no mínimo 3 caracteres (RN01) | `validate_titulo` no serializer | ✅ | `test_titulo_curto_invalido` |
+| Relacionamento Projeto → Tarefa com exclusão em cascata | `on_delete=CASCADE` | ✅ | `test_excluir_projeto_remove_tarefas` |
+| `prioridade` só aceita `BAIXA`, `MEDIA` ou `ALTA` | `choices` em `Tarefa.prioridade` | ❌ | — |
+| Campos obrigatórios (`titulo`, `projeto`, `nome`, `usuario`) | Serializers (`ModelSerializer`) | ❌ | — |
+
+---
+
 ## 5. Resultado da execução
 
 ```
@@ -359,12 +386,3 @@ exemplo do app `users`, que já vinha no projeto base.
 | `FAILED (failures=N, errors=M)` no final | Algum teste falhou |
 
 ---
-
-## 6. Correções feitas a partir dos testes
-
-Ao escrever os testes, apareceram dois problemas no código, que foram corrigidos:
-
-| Problema | Causa | Correção |
-|---|---|---|
-| Título com menos de 3 caracteres retornava erro **500** em vez de **400** | `tasks/models.py` usava `models.ValidationError`, que não existe em `django.db.models`. Além disso, o DRF não converte o `ValidationError` do model em resposta `400`. | O model passou a importar `ValidationError` de `django.core.exceptions`. O `TarefaSerializer` ganhou o método `validate_titulo`, que devolve `400`. O limite e a mensagem ficaram nas constantes `TITULO_TAMANHO_MINIMO` e `MENSAGEM_TITULO_CURTO`, usadas pelo model e pelo serializer, sem duplicação. |
-| As tabelas de projetos e tarefas não existiam no banco | O app `tasks` não tinha migrations | Foi gerada a migration `tasks/migrations/0001_initial.py`, aplicada com `python manage.py migrate`. |
