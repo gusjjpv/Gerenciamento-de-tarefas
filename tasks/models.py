@@ -10,8 +10,12 @@ Business rules:
 - default status is PENDENTE when creating a Tarefa without explicit status
 """
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User
+
+TITULO_TAMANHO_MINIMO = 3
+MENSAGEM_TITULO_CURTO = "O título da tarefa deve ter, no mínimo, 3 caracteres."
 
 class StatusTarefa(models.TextChoices):
     PENDENTE = "PENDENTE", "Pendente"
@@ -55,8 +59,8 @@ class Tarefa(models.Model):
 
     def clean(self):
         # Business rule: title min 3 chars
-        if len(self.titulo) < 3:
-            raise models.ValidationError({"titulo": "O título da tarefa deve ter, no mínimo, 3 caracteres."})
+        if len(self.titulo) < TITULO_TAMANHO_MINIMO:
+            raise ValidationError({"titulo": MENSAGEM_TITULO_CURTO})
 
     def save(self, *args, **kwargs):
         # Ensure clean is called on save

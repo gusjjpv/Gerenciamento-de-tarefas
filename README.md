@@ -1,427 +1,408 @@
-### Bem-vindo ao DRF Quick Project!
+# API de Gerenciamento de Tarefas (Task Management API)
 
-Nesta experiência de aprendizado interativa, você aprenderá uma breve visão sobre o desenvolvimento de Web APIs com Django Rest Framework (DRF). Seja você iniciante em Django ou já familiarizado com ele, este projeto fornecerá uma abordagem prática e passo a passo para criar APIs RESTful rapidamente.
+API RESTful desenvolvida com **Django** e **Django Rest Framework (DRF)** para gerenciamento de projetos e tarefas, com persistência em banco de dados SQLite e documentação interativa via Swagger (drf-spectacular).
 
-Neste projeto você explorará componentes essenciais do DRF, como serializers, views, autenticação e permissões, entre outros. Você também pode ver exemplos de testes unitários com pytest para garantir a confiabilidade dos endpoints da sua API. Ao final deste projeto, você terá uma boa compreensão de como o DRF funciona e o conhecimento básico para construir APIs com Django.
+> Projeto desenvolvido para o Trabalho da Unidade 02 da disciplina de **Manutenção de Software** — Universidade Federal Rural do Semi-Árido (**UFERSA**).
 
-#### Django Rest Framework (DRF)
+---
 
-Django Rest Framework (DRF) é um toolkit poderoso e flexível para construção de Web APIs em Python utilizando o framework web Django. Ele fornece um conjunto abrangente de ferramentas e recursos que tornam mais fácil para os desenvolvedores criarem APIs RESTful robustas e eficientes.
+## Sumário
 
-Algumas características principais do Django Rest Framework incluem:
+- [Visão Geral](#visão-geral)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Modelagem de Dados e Arquitetura](#modelagem-de-dados-e-arquitetura)
+- [Regras de Negócio e Validações](#regras-de-negócio-e-validações)
+- [Instruções de Instalação e Execução](#instruções-de-instalação-e-execução)
+- [Execução dos Testes Automatizados](#execução-dos-testes-automatizados)
+- [Descrição dos Endpoints da API](#descrição-dos-endpoints-da-api)
+  - [Documentação Interativa (Swagger / OpenAPI)](#documentação-interativa-swagger--openapi)
+  - [Autenticação](#autenticação)
+  - [Projetos (`/projetos/`)](#projetos-projetos)
+  - [Tarefas (`/tarefas/`)](#tarefas-tarefas)
+  - [Usuários (`/users/`)](#usuários-users)
+  - [Django Admin (`/admin/`)](#django-admin-admin)
+- [Exemplos Práticos de Uso](#exemplos-práticos-de-uso)
+- [Estrutura do Repositório](#estrutura-do-repositório)
 
-* **Serializers**: o DRF fornece serializers para converter dados complexos, como modelos Django, querysets ou objetos Python, em JSON ou XML para respostas da API. Eles também lidam com desserialização, permitindo que os dados sejam convertidos de volta para tipos nativos do Python para processamento.
+---
 
-* **Viewsets e Views**: o DRF oferece classes de views poderosas, como Viewsets e Views, que tratam a lógica para processar métodos HTTP como GET, POST, PUT, PATCH e DELETE em diferentes endpoints da API.
+## Visão Geral
 
-* **Autenticação e Permissões**: o DRF inclui vários métodos de autenticação, como Token Authentication, Basic Authentication e JSON Web Tokens (JWT), para proteger APIs. Ele também suporta permissões granulares para controlar o acesso aos recursos.
+A **Task Management API** permite aos usuários organizar seus projetos e controlar tarefas associadas. Cada usuário pode criar e manter múltiplos projetos, e cada projeto pode conter um conjunto de tarefas com definições de prioridade, status de andamento e prazos limite.
 
-* **Paginação**: o DRF permite configuração simples de paginação para respostas da API, possibilitando o tratamento eficiente de grandes volumes de dados.
+---
 
-* **Filtragem, Busca e Ordenação**: o DRF fornece mecanismos de filtragem que facilitam a busca, filtragem e ordenação dos resultados da API, melhorando sua usabilidade.
+## Tecnologias Utilizadas
 
-De forma geral, o Django Rest Framework é amplamente adotado pela comunidade Python e Django devido à sua facilidade de uso, documentação extensa e versatilidade na construção de Web APIs escaláveis e de alta qualidade. Ele fornece uma base sólida para que desenvolvedores criem APIs RESTful com o mínimo de código repetitivo, permitindo foco na entrega de aplicações funcionais e ricas em recursos.
+- **Python** (3.10+)
+- **Django** (4.2.3)
+- **Django Rest Framework** (3.14.0)
+- **drf-spectacular** (0.26.4) — Geração de documentação OpenAPI 3.0 e Swagger UI
+- **SQLite** — Banco de dados relacional padrão
+- **pytest** & **pytest-django** — Suíte de testes automatizados
 
-#### Requisitos do Sistema
+---
 
-Para construir aplicações web com DRF, você precisará dos seguintes requisitos em seu sistema:
+## Modelagem de Dados e Arquitetura
 
-* Python 3.10 ou versão mais recente;
-* Pip 22.0 ou versão mais recente;
-* Virtualenv 20.19 ou versão mais recente;
+O modelo de domínio é composto por duas entidades principais relacionadas entre si e integradas ao modelo de autenticação de usuários nativo do Django (`django.contrib.auth.models.User`).
 
-#### Instalação Rápida
+O diagrama de classes completo em PlantUML pode ser consultado em [`docs/diagrama.iuml`](docs/diagrama.iuml).
 
-Este guia tem como objetivo iniciar rapidamente as configurações do projeto e proporcionar uma experiência prática rápida com DRF. No entanto, para habilitar e executar o projeto, alguns comandos ainda são necessários.
+### Entidades
 
-* **Passo 1** - Crie um ambiente virtual Python para instalar todas as dependências necessárias:
+#### 1. `Projeto`
+Representa um projeto pertencente a um usuário.
+- `id` (*IntegerField*, chave primária automática)
+- `usuario` (*ForeignKey* para `User` com `on_delete=CASCADE`, `related_name="projetos"`)
+- `nome` (*CharField*, tamanho máximo 200)
+- `descricao` (*TextField*, opcional/em branco)
+- `data_criacao` (*DateTimeField*, gerado automaticamente na criação)
+- `data_atualizacao` (*DateTimeField*, atualizado automaticamente a cada modificação)
 
-```
-    python3 -m venv venv
-```
+#### 2. `Tarefa`
+Representa uma tarefa associada a um determinado projeto.
+- `id` (*IntegerField*, chave primária automática)
+- `projeto` (*ForeignKey* para `Projeto` com `on_delete=CASCADE`, `related_name="tarefas"`)
+- `titulo` (*CharField*, tamanho máximo 200, mínimo de 3 caracteres)
+- `descricao` (*TextField*, opcional/em branco)
+- `status` (*CharField*, opções de `StatusTarefa`, padrão: `PENDENTE`)
+- `prioridade` (*CharField*, opções de `Prioridade`, padrão: `MEDIA`)
+- `prazo` (*DateField*, opcional/nulo)
+- `data_criacao` (*DateTimeField*, gerado automaticamente na criação)
+- `data_atualizacao` (*DateTimeField*, atualizado automaticamente a cada modificação)
 
-* **Passo 2** - Ative o ambiente virtual Python:
+### Enums
 
-```
-    . venv/bin/activate
-```
+- **`StatusTarefa`**:
+  - `PENDENTE` — Pendente (valor padrão)
+  - `EM_ANDAMENTO` — Em andamento
+  - `CONCLUIDA` — Concluída
+- **`Prioridade`**:
+  - `BAIXA` — Baixa
+  - `MEDIA` — Média (valor padrão)
+  - `ALTA` — Alta
 
-* **Passo 3** - Instale todas as dependências:
+---
 
-```
-    pip install -r requirements.txt
-```
+## Regras de Negócio e Validações
 
-* **Passo 4** - Execute o servidor interno e divirta-se! ;)
+1. **Validação de Tamanho Mínimo do Título da Tarefa (`RN01`)**:
+   - O título da tarefa deve possuir, no mínimo, **3 caracteres**.
+   - Caso uma requisição informe um título com menos de 3 caracteres, a requisição é rejeitada com mensagem de erro explicativa.
+2. **Definição de Status Padrão (`RN03`)**:
+   - Caso uma tarefa seja criada sem a especificação do campo `status`, o valor assumido automaticamente é `PENDENTE`.
+3. **Definição de Prioridade Padrão**:
+   - Caso uma tarefa seja criada sem a especificação do campo `prioridade`, o valor assumido automaticamente é `MEDIA`.
+4. **Integridade Referencial e Exclusão em Cascata**:
+   - Tarefas sempre estão vinculadas a um projeto existente.
+   - A exclusão de um projeto remove automaticamente todas as tarefas associadas a ele (`CASCADE`).
 
-```
-    python manage.py runserver
-```
+---
 
-Pare o servidor digitando Ctrl+C no terminal.
+## Instruções de Instalação e Execução
 
-#### Arquitetura do DRF
+Siga os passos abaixo para configurar e executar a API em seu ambiente local:
 
-A arquitetura do DRF é construída sobre a arquitetura consolidada do Django, que é um framework web de alto nível em Python. O DRF estende as capacidades do Django para fornecer uma arquitetura especializada para construção de Web APIs (Application Programming Interfaces), seguindo os princípios de Representational State Transfer (REST).
+### 1. Clonar o Repositório
 
-Aqui está uma breve descrição dos principais componentes da arquitetura do DRF:
-
-1. **Serializers**: lidam com a conversão de dados entre tipos complexos e respostas da API.
-2. **Views e Viewsets**: gerenciam o processamento das requisições da API e a geração de respostas.
-3. **Roteamento de URLs**: mapeia URLs para as views ou viewsets apropriados.
-4. **Autenticação e Permissões**: garantem a segurança da API com diferentes métodos de autenticação e controle granular de acesso.
-5. **Paginação**: trata eficientemente grandes volumes de dados configurando paginação nas respostas da API.
-6. **Negociação de Conteúdo**: responde com diferentes tipos de conteúdo com base nas requisições do cliente.
-7. **Filtragem, Busca e Ordenação**: habilita filtragem, busca e ordenação dos resultados da API.
-8. **Versionamento de API**: suporta mudanças na API mantendo compatibilidade com versões anteriores.
-
-#### Estrutura de Diretórios
-
-A estrutura de diretórios do DRF é semelhante à de um projeto Django padrão. No entanto, o DRF introduz alguns diretórios e arquivos específicos essenciais para a construção de Web APIs.
-
-**Diretório Raiz do Projeto**:
-
-* É o diretório principal do projeto DRF.
-* Contém o arquivo principal de configuração do projeto, geralmente chamado `settings.py`, onde são definidas as configurações globais.
-* Também inclui outros arquivos de configuração como `urls.py`, que define os padrões de URL do projeto.
-
-**Diretórios de Aplicações (Apps)**:
-
-* O DRF segue a arquitetura baseada em apps do Django, onde cada app representa uma funcionalidade específica.
-* Cada app normalmente contém seus próprios arquivos `models.py`, `views.py` e `serializers.py`.
-* O arquivo `models.py` define os modelos de dados.
-* O arquivo `views.py` contém as views e viewsets para manipular requisições e respostas da API.
-* O arquivo `serializers.py` define os serializers para conversão de dados.
-
-Exemplo:
-
-```
-project_root/
-|-- config/
-|   |-- __init__.py
-|   |-- asgi.py
-|   |-- settings.py
-|   |-- urls.py
-|   |-- wsgi.py
-|
-|-- users/
-|   |-- api/
-|       |-- views.py
-|       |-- serializers.py
-|   |-- migrations/
-|   |-- __init__.py
-|   |-- admin.py
-|   |-- apps.py
-|   |-- models.py
-|   |-- tests.py
-|   |-- views.py
-|-- .gitignore
-|-- db.sqlite3 (banco de dados local com SQLite)
-|-- LICENSE
-|-- manage.py
-|-- README.md (Este arquivo!)
-|-- requirements.txt (opcional)
+```bash
+git clone <URL_DO_REPOSITORIO>
+cd django-quickproject
 ```
 
-#### Criando Apps
+### 2. Criar e Ativar o Ambiente Virtual
 
-O DRF fornece uma estratégia simples de modularização com apps. Para criar uma nova app no seu projeto, digite:
+- **No Linux/macOS:**
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
 
-```
-   django-admin startapp new_app_name
-```
+- **No Windows:**
+  ```bash
+  python -m venv venv
+  venv\Scripts\activate
+  ```
 
-Vamos iniciar nosso projeto tutorial para uma livraria (Bookstore). Adicionaremos uma app chamada **books**.
+### 3. Instalar as Dependências
 
-```
-   django-admin startapp books
-```
-
-Todas as apps precisam ser incluídas na variável `INSTALLED_APPS` em **config/settings.py**.
-
-```python
-# Application definition
-
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "rest_framework",
-    "rest_framework.authtoken",
-    "users",
-    "books", # <--- Nossa app aqui
-]
+```bash
+pip install -r requirements.txt
 ```
 
-#### Modelos Django (ORM)
+### 4. Executar as Migrações do Banco de Dados
 
-O DRF utiliza o poderoso sistema ORM (Object-Relational Mapping) do Django para interagir com bancos de dados e gerenciar persistência de dados em Web APIs. O ORM do DRF se baseia no ORM do Django, permitindo que desenvolvedores trabalhem com recursos da API como objetos Python e realizem facilmente operações CRUD (Create, Retrieve, Update, Delete) no banco de dados.
+Gere e aplique as migrações para inicializar o esquema no SQLite:
 
-Para incluir novos modelos em nossa Bookstore, vamos adicionar o modelo `Book` no arquivo **books/models.py**.
-
-```python
-from django.db import models
-
-class Book(models.Model):
-    title = models.CharField(max_length=100)
-    author = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.title
+```bash
+python manage.py makemigrations tasks
+python manage.py migrate
 ```
 
-Após criar nosso modelo `Book`, precisamos atualizar a estrutura do banco de dados para incluir o novo modelo.
+### 5. Criar Superusuário (Opcional)
 
-Digite os comandos:
+Para acessar o painel do Django Admin e criar usuários:
 
-```
-   python manage.py makemigrations
-```
-
-```
-   python manage.py migrate
+```bash
+python manage.py createsuperuser
 ```
 
-### Interface Admin do Django
+> **Nota:** O banco de dados pré-configurado já inclui um usuário padrão:
+> - **Usuário:** `admin`
+> - **Senha:** `adminadmin`
 
-A interface Admin do Django é uma ferramenta poderosa e amigável que já vem integrada ao framework Django. Ela fornece uma interface web fácil de usar para gerenciar e interagir com os dados da aplicação.
+### 6. Executar o Servidor de Desenvolvimento
 
-Adicione os seguintes comandos para registrar o novo modelo no admin. No arquivo **books/admin.py**, adicione:
-
-```python
-from django.contrib import admin
-from books.models import Book  # <--- importa o modelo
-
-# Register your models here.
-
-admin.site.register(Book)  # <--- registra o modelo
+```bash
+python manage.py runserver
 ```
 
-#### Serializers no DRF
+O servidor estará ativo em: `http://127.0.0.1:8000/`.
 
-Os serializers desempenham um papel crucial ao facilitar a conversão de dados entre tipos complexos do Python e representações da API, como JSON ou XML.
+---
 
-Para incluir os serializers, vamos criar um novo diretório chamado **api** dentro de **books**, e criar um novo arquivo chamado **serializers.py**.
+## Execução dos Testes Automatizados
 
-O caminho será **books/api/serializers.py**.
+Para executar os testes com o **pytest**:
 
-Adicione as seguintes linhas:
-
-```python
-from rest_framework import serializers
-from books.models import Book
-
-class BookSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Book
-        fields = ['id', 'title', 'author']
+```bash
+pytest
 ```
 
-#### Views no DRF e Class-Based Views
+Ou através do gerenciador de testes padrão do Django:
 
-O DRF fornece duas abordagens principais para tratar requisições e respostas da API: function-based views e class-based views. As class-based views são mais sofisticadas e preferidas devido à modularidade e reutilização de código.
-
-Exemplo de Function-based View:
-
-```python
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from books.models import Book
-from books.api.serializers import BookSerializer
-
-@api_view(['GET', 'POST'])
-def book_list_create_view(request):
-    if request.method == 'GET':
-        books = Book.objects.all()
-        serializer = BookSerializer(books, many=True)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        serializer = BookSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+```bash
+python manage.py test -v 2
 ```
 
-Agora vamos incluir uma Class-based View para listar livros. Crie o arquivo **views.py** em **books/api**.
+---
 
-Adicione:
+## Descrição dos Endpoints da API
 
-```python
-from rest_framework.viewsets import ModelViewSet
-from books.models import Book
-from books.api.serializers import BookSerializer
+### Documentação Interativa (Swagger / OpenAPI)
 
-class BookListCreateView(ModelViewSet):
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-```
+A API disponibiliza documentação interativa gerada automaticamente com **drf-spectacular**:
 
-#### Roteamento no DRF
+- **Swagger UI:** [http://127.0.0.1:8000/swagger/](http://127.0.0.1:8000/swagger/)
+- **OpenAPI Schema (YAML/JSON):** [http://127.0.0.1:8000/schema/](http://127.0.0.1:8000/schema/)
 
-O roteamento é um componente essencial que mapeia URLs para views ou viewsets apropriadas em uma Web API.
+---
 
-Vamos incluir nossa view para listar livros no arquivo **config/urls.py**:
+### Autenticação
 
-```python
-from django.contrib import admin
-from django.urls import path
-from rest_framework.routers import SimpleRouter
-from rest_framework.authtoken import views
-from books.api.views import BookListCreateView ### View de Book
+A API suporta autenticação via Token (`TokenAuthentication`), Basic Auth e Session Auth. Para obter um token via credenciais de usuário:
 
-from users.api.views import UserProfileExampleViewSet
-
-router = SimpleRouter()
-
-router.register("users", UserProfileExampleViewSet, basename="users")
-router.register("api/books", BookListCreateView, basename="book-list"), ## <-- rota da listagem de livros
-
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/token-auth/", views.obtain_auth_token),
-]+router.urls
-```
-
-Pronto! Agora execute o servidor interno com o comando:
-
-```
-   python manage.py runserver
-```
-
-#### Interface Admin do Django
-
-Para acessar a interface administrativa do Django, digite a seguinte URL no navegador:
-
-```
-http://localhost:8000/admin/
-```
-
-No formulário de login, use as credenciais:
-
-```
-login: admin
-password: adminadmin
-```
-
-Na tela, procure o item **Books** na lista. Em seguida, no canto superior direito, clique em **ADD BOOK +**. Aparecerá um formulário para cadastrar novos livros no sistema.
-
-Para acessar a lista de livros, digite:
-
-```
-http://localhost:8000/api/books/
-```
-
-#### Autenticação por Token
-
-Configuramos a autenticação nativa por token do DRF. Para obter um token, use o endpoint:
-
-* **api/token-auth/** enviando credenciais válidas de usuário/senha.
-
-As credenciais do usuário admin são `admin/adminadmin`.
-
-Envie a seguinte requisição JSON:
-
-```json
-{
+- **Rota:** `POST /api/token-auth/`
+- **Corpo da Requisição:**
+  ```json
+  {
     "username": "admin",
     "password": "adminadmin"
+  }
+  ```
+- **Resposta de Sucesso (`200 OK`):**
+  ```json
+  {
+    "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b"
+  }
+  ```
+- Para utilizar o token nas requisições subsequentes, envie o header HTTP:
+  ```http
+  Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+  ```
+
+---
+
+### Projetos (`/projetos/`)
+
+Gerenciamento de projetos via `ModelViewSet` (operações CRUD completas):
+
+| Método | Rota | Descrição | Status de Sucesso |
+|---|---|---|---|
+| `GET` | `/projetos/` | Lista todos os projetos cadastrados | `200 OK` |
+| `POST` | `/projetos/` | Cria um novo projeto | `201 Created` |
+| `GET` | `/projetos/{id}/` | Retorna os detalhes de um projeto específico | `200 OK` |
+| `PUT` | `/projetos/{id}/` | Atualiza completamente um projeto existente | `200 OK` |
+| `PATCH` | `/projetos/{id}/` | Atualiza parcialmente um projeto existente | `200 OK` |
+| `DELETE` | `/projetos/{id}/` | Exclui um projeto e suas tarefas associadas | `204 No Content` |
+
+#### Payload para Criação de Projeto (`POST /projetos/`)
+```json
+{
+  "usuario": 1,
+  "nome": "Sistema de Gestão Escolar",
+  "descricao": "Desenvolvimento do módulo de matrículas e notas"
 }
 ```
 
-Para incluir novos usuários, crie um novo endpoint para o modelo `User` ou adicione usuários pela Interface Admin do Django.
+---
 
-#### Managers e Services
+### Tarefas (`/tarefas/`)
 
-Managers e Services desempenham papéis essenciais no gerenciamento de dados e lógica de negócio em Web APIs.
+Gerenciamento de tarefas vinculadas a projetos (operações CRUD completas):
 
-**Managers**: são parte fundamental do ORM do Django, fornecendo uma forma conveniente de encapsular lógica de consulta e operações de banco de dados.
+| Método | Rota | Descrição | Status de Sucesso |
+|---|---|---|---|
+| `GET` | `/tarefas/` | Lista todas as tarefas | `200 OK` |
+| `POST` | `/tarefas/` | Cria uma nova tarefa (com validação de título) | `201 Created` |
+| `GET` | `/tarefas/{id}/` | Retorna os detalhes de uma tarefa específica | `200 OK` |
+| `PUT` | `/tarefas/{id}/` | Atualiza completamente uma tarefa existente | `200 OK` |
+| `PATCH` | `/tarefas/{id}/` | Atualiza parcialmente os campos de uma tarefa | `200 OK` |
+| `DELETE` | `/tarefas/{id}/` | Exclui uma tarefa | `204 No Content` |
 
-Exemplo:
-
-```python
-## managers.py
-from django.db import models
-
-class PublishedBooksManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().filter(is_published=True)
+#### Payload para Criação de Tarefa (`POST /tarefas/`)
+```json
+{
+  "projeto": 1,
+  "titulo": "Implementar autenticação JWT",
+  "descricao": "Adicionar suporte a tokens com expiração configurável",
+  "status": "PENDENTE",
+  "prioridade": "ALTA",
+  "prazo": "2026-12-15"
+}
 ```
 
-```python
-## models.py
-class Book(models.Model):
-    title = models.CharField(max_length=100)
-    author = models.CharField(max_length=100)
-    is_published = models.BooleanField(default=False)
+> **Campos opcionais na criação:**
+> - `descricao` (pode ser vazio)
+> - `status` (assume `PENDENTE` caso omitido)
+> - `prioridade` (assume `MEDIA` caso omitido)
+> - `prazo` (pode ser nulo/omitido, formato aceito: `YYYY-MM-DD`)
 
-    objects = models.Manager()  # Manager padrão
-    published_books = PublishedBooksManager()  # Manager customizado
+---
+
+### Usuários (`/users/`)
+
+Exemplo de visualização de perfil de usuário do projeto base:
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/users/` | Lista perfis de usuário de exemplo |
+| `GET` | `/users/{id}/` | Retorna detalhes do perfil especificado |
+| `PUT` | `/users/{id}/` | Atualiza os dados do perfil |
+
+---
+
+### Django Admin (`/admin/`)
+
+Interface administrativa para gerenciamento visual de tabelas, usuários e permissões:
+
+- **URL:** [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+
+---
+
+## Exemplos Práticos de Uso
+
+### 1. Criar um Projeto com `curl`
+
+```bash
+curl -X POST http://127.0.0.1:8000/projetos/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usuario": 1,
+    "nome": "Reformulação do Portal",
+    "descricao": "Modernização do layout e infraestrutura"
+  }'
 ```
 
-**Services**: são componentes de alto nível projetados para lidar com lógica de negócio complexa e atuar como intermediários entre views e models.
-
-Exemplo:
-
-```python
-# services.py
-from books.models import Book
-
-class BookService:
-    @staticmethod
-    def calculate_total_price(book_ids):
-        total_price = 0
-        for book_id in book_ids:
-            try:
-                book = Book.objects.get(id=book_id)
-                total_price += book.price
-            except Book.DoesNotExist:
-                pass
-        return total_price
+**Resposta:**
+```json
+{
+  "id": 1,
+  "usuario": 1,
+  "nome": "Reformulação do Portal",
+  "descricao": "Modernização do layout e infraestrutura",
+  "data_criacao": "2026-11-10T17:00:00Z",
+  "data_atualizacao": "2026-11-10T17:00:00Z"
+}
 ```
 
-Juntos, Managers e Services melhoram a organização e eficiência de um projeto Django Rest Framework, promovendo separação clara de responsabilidades e facilitando o desenvolvimento de Web APIs robustas e escaláveis.
+### 2. Criar uma Tarefa Válida
 
-#### Testes no Django
-
-O Django Rest Framework suporta testes unitários com `pytest`, um framework de testes popular na comunidade Python.
-
-Exemplo:
-
-```python
-from django.urls import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
-from books.models import Book
-from books.api.serializers import BookSerializer
-
-class BookListViewTest(APITestCase):
-    def setUp(self):
-        self.url = reverse('book-list-create')
-        self.book1 = Book.objects.create(title='Book 1', author='Author 1')
-        self.book2 = Book.objects.create(title='Book 2', author='Author 2')
-        self.expected_data = BookSerializer([self.book1, self.book2], many=True).data
-
-    def test_list_books(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, self.expected_data)
+```bash
+curl -X POST http://127.0.0.1:8000/tarefas/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projeto": 1,
+    "titulo": "Criar tela de login",
+    "prioridade": "ALTA",
+    "prazo": "2026-11-20"
+  }'
 ```
 
-Para executar os testes, use o comando:
-
+**Resposta:**
+```json
+{
+  "id": 1,
+  "projeto": 1,
+  "titulo": "Criar tela de login",
+  "descricao": "",
+  "status": "PENDENTE",
+  "prioridade": "ALTA",
+  "prazo": "2026-11-20",
+  "data_criacao": "2026-11-10T17:05:00Z",
+  "data_atualizacao": "2026-11-10T17:05:00Z"
+}
 ```
-    pytest
+
+### 3. Exemplo de Violação de Regra de Negócio (Título com menos de 3 caracteres)
+
+```bash
+curl -X POST http://127.0.0.1:8000/tarefas/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projeto": 1,
+    "titulo": "Oi"
+  }'
 ```
 
-Bons estudos! Para mais informações, consulte a documentação oficial do DRF:
+**Resposta de Erro (`400 Bad Request`):**
+```json
+{
+  "titulo": [
+    "O título da tarefa deve ter, no mínimo, 3 caracteres."
+  ]
+}
+```
 
-[Django Rest Framework Documentation](https://www.django-rest-framework.org/?utm_source=chatgpt.com)
+### 4. Atualizar o Status de uma Tarefa (`PATCH`)
 
-Equipe LISA
-_
-# Gerenciamento-de-tarefas
+```bash
+curl -X PATCH http://127.0.0.1:8000/tarefas/1/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "CONCLUIDA"
+  }'
+```
+
+---
+
+## Estrutura do Repositório
+
+```text
+django-quickproject/
+├── config/                  # Configurações globais do Django (settings, urls, asgi, wsgi)
+├── docs/                    # Documentação e artefatos de engenharia
+│   ├── diagrama.iuml        # Diagrama de classes em PlantUML
+│   └── testes-api-tasks.md  # Documentação detalhada dos testes automatizados
+├── tasks/                   # Aplicação principal de Gerenciamento de Tarefas
+│   ├── api/
+│   │   ├── serializers.py   # Serializers do DRF (ProjetoSerializer, TarefaSerializer)
+│   │   └── views.py         # ViewSets do DRF (ProjetoViewSet, TarefaViewSet)
+│   ├── migrations/          # Migrações do banco de dados SQLite
+│   ├── apps.py              # Configuração da app tasks
+│   ├── models.py            # Modelos Projeto, Tarefa e Enums StatusTarefa, Prioridade
+│   └── tests.py             # Testes automatizados da API de tarefas (APITestCase)
+├── users/                   # Aplicação de usuários e perfis
+│   ├── api/
+│   │   ├── serializers.py   # Serializer de UserProfile
+│   │   └── views.py         # ViewSet de UserProfile
+│   ├── admin.py             # Registro no admin
+│   ├── models.py            # Modelo UserProfileExample
+│   └── tests.py             # Testes de exemplo da aplicação users
+├── db.sqlite3               # Banco de dados SQLite local
+├── manage.py                # Utilitário de linha de comando do Django
+├── pytest.ini               # Configuração do executor pytest
+├── requirements.txt         # Lista de dependências do projeto
+└── README.md                # Documentação do projeto (este arquivo)
+```
